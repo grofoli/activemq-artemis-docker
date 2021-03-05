@@ -28,7 +28,7 @@ tag_%:
 
 push_%:
 	@docker push $(call getFullTagNameFromTag,$*)
-	@for alias in $(call lookupÀliasesFromTag,$1); do docker push $$alias ; done
+	@for alias in $(call lookupÀliasesFromTag,$*); do docker push $$alias ; done
 
 run_%: build
 	docker run -i -t --rm $(call getFullTagNameFromTag,$*)
@@ -39,7 +39,7 @@ runsh_%: build
 all: $(ALL_VERSION_TAGS)
 
 test_%:
-	@DOCKER_FILE=$(call lookupDockerfileFromTag,$*) COORDINATES=$(call getFullTagNameFromTag,$*) TAG=$* bats test/*.bats
+	@DOCKER_FILE=$(call lookupDockerfileFromTag,$*) COORDINATES=$(call getFullTagNameFromTag,$*) ACTIVEMQ_ARTEMIS_VERSION=$(call getVersionFromTag,$*) TAG=$* bats test/*.bats
 	@echo
 
 	

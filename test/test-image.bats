@@ -4,8 +4,35 @@
   	GOSS_FILES_PATH=$BATS_TEST_DIRNAME/assets GOSS_VARS="vars.yaml" dgoss run -it --rm -h testHostName.local ${COORDINATES}
 }
 
+@test "docker container can have JSON output" {
+
+	# Only 2.10 and later supported
+  	if $(echo "${ACTIVEMQ_ARTEMIS_VERSION}" | grep -Eq "1\.[0-9]+\.[0-9]+|2\.[0-9]{1}.[0-9]+"); then
+		skip
+		return
+	fi
+
+	export UUID="$(uuidgen)"
+	
+	docker run -d --name "$UUID" -h testHostName.local -e LOG_FORMATTER=JSON ${COORDINATES}
+    
+	n=0; until [ "$n" -ge 5 ]
+   	do
+        sleep 2
+       	[ "$(docker logs --tail 1 $UUID | jq -r '.hostName')" = "testhostname.local" ] && break
+       	n=$((n+1))
+   	done
+    
+	docker stop "$UUID"
+   	[ $n -lt 5 ]
+}
+
 @test "docker container can set username and password" {
 	GOSS_FILES_PATH=$BATS_TEST_DIRNAME/assets GOSS_VARS="vars.yaml" dgoss run -it --rm -h testHostName.local -e ARTEMIS_USERNAME=myusername -e ARTEMIS_PASSWORD=mypassword ${COORDINATES}
+}
+
+@test "docker container can set java opts" {
+	GOSS_FILES_PATH=$BATS_TEST_DIRNAME/assets GOSS_VARS="vars.yaml" dgoss run -it --rm -h testHostName.local -e "JAVA_OPTS=-Djavax.net.ssl.keyStore=/var/lib/artemis/etc/keystore.jks -Djavax.net.ssl.keyStorePassword=changeit" ${COORDINATES}
 }
 
 @test "docker container can autorun performance journal tuning" {
@@ -17,7 +44,7 @@
 }
 
 @test "docker container can enable JMX" {
-  	GOSS_FILES_PATH=$BATS_TEST_DIRNAME/assets GOSS_VARS="vars.yaml" dgoss run -it --rm -h testHostName.local -e ENABLE_JMX=true -e JMX_PORT=2222 -e JMX_RMI_PORT=3333 -e JAVA_OPTS="-Dmyjavaopt=yes" -e BROKER_CONFIG_GLOBAL_MAX_SIZE=9500 ${COORDINATES}
+  	GOSS_FILES_PATH=$BATS_TEST_DIRNAME/assets GOSS_VARS="vars.yaml" dgoss run -it --rm -h testHostName.local -e ENABLE_JMX=true -e JMX_PORT=2222 -e JMX_RMI_PORT=3333 -e BROKER_CONFIG_GLOBAL_MAX_SIZE=9500 ${COORDINATES}
 }
 
 @test "docker container can enable JMX exporter" {
@@ -53,15 +80,4 @@
 	GOSS_FILES_PATH=$BATS_TEST_DIRNAME/assets GOSS_VARS="vars.yaml" dgoss run -it --rm -h testHostName.local -v "${TMP_DIR}:/var/lib/artemis/etc" -e RESTORE_CONFIGURATION=true ${COORDINATES}
 	rm -Rf "${TMP_DIR}"
 }
-
-
-
-
-
-
-
-
-
-
-
 
